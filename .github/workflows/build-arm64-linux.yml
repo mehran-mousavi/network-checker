@@ -1,13 +1,13 @@
-# Builds a native Linux ARM64 Flutter bundle for Debian 13 / Raspberry Pi 5
-# and publishes it to a GitHub Release tagged from pubspec.yaml version.
-#
-# Requires a public repo (or Team/Enterprise) for ubuntu-24.04-arm runners.
-# Private repos on the free plan must use a self-hosted ARM runner or cross-compile.
+# Builds a Linux ARM64 Flutter bundle (Debian 13 / Raspberry Pi 5) via cross-compile
+# on ubuntu-latest, then publishes it to a GitHub Release.
 
-name: Build Linux arm64 Flutter App
+name: Build Final Flutter App (linux arm6)
 
 on:
   workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: write
@@ -15,26 +15,35 @@ permissions:
 jobs:
   build_linux_arm64:
     name: Build Linux ARM64 (Debian 13 / Pi 5)
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Verify Flutter project
+        run: test -f pubspec.yaml
 
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.38.5"
           channel: stable
 
-      - name: Install Linux build dependencies
+      - name: Install Linux build dependencies and ARM64 cross-toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             ninja-build cmake pkg-config clang \
-            libgtk-3-dev libblkid-dev liblzma-dev zip
+            libgtk-3-dev libblkid-dev liblzma-dev zip \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Enable Linux desktop and precache ARM64 engine
+        run: |
+          flutter config --enable-linux-desktop
+          flutter precache --linux
 
       - run: flutter pub get
 
       - name: Build Linux ARM64 release
-        run: flutter build linux --release
+        run: flutter build linux --release --target-platform linux-arm64
 
       - name: List Linux build directory
         run: ls -alh "${{ github.workspace }}/build/linux/arm64/release/bundle"
@@ -45,7 +54,7 @@ jobs:
           zip -r rdnbenet-linux-arm64.zip .
 
       - name: Upload Linux ARM64 build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-arm64-zip
           path: ${{ github.workspace }}/build/linux/arm64/release/bundle/rdnbenet-linux-arm64.zip
@@ -55,7 +64,7 @@ jobs:
     needs: [build_linux_arm64]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Read version from pubspec.yaml
         id: version
@@ -66,7 +75,7 @@ jobs:
           echo "TAG=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Download Linux ARM64 ZIP
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: linux-arm64-zip
           path: ./out/linux
