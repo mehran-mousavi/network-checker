@@ -4,7 +4,7 @@
 # Requires a public repo (or Team/Enterprise) for ubuntu-24.04-arm runners.
 # Private repos on the free plan must use a self-hosted ARM runner or cross-compile.
 
-name: Build Final Flutter App
+name: Build Linux arm64 Flutter App
 
 on:
   workflow_dispatch:
