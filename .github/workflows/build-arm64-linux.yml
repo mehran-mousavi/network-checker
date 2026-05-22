@@ -5,7 +5,6 @@ on: workflow_dispatch
 jobs:
   build_linux_arm64:
     name: Build Linux ARM64
-    # استفاده از رانر بومی ARM برای بالاترین سرعت و حذف شبیه‌ساز
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v3
@@ -15,10 +14,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build cmake libgtk-3-dev pkg-config
           
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.5'
+      - name: Set up Flutter (Manual Git Clone)
+        run: |
+          git clone https://github.com/flutter/flutter.git --depth 1 --branch 3.38.5 $HOME/flutter
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
+          
+      - name: Initialize Flutter
+        run: |
+          flutter config --enable-linux-desktop
+          flutter doctor -v
           
       - name: Get Packages
         run: flutter pub get
